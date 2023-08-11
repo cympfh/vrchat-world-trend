@@ -1,0 +1,71 @@
+[batch]
+interval_min = 60  # 前回調べてからこれ以上経過してないと調べない
+
+[world]
+names = [
+  "trending",
+  "avatar/trending",
+  "spotlight/cross",
+  "spotlight/pc",
+  "new",
+  "updated",
+]
+
+[world.trending]
+max_unity_version = "2019.4.31f1"
+release_status = "public"
+sort = "heat"
+featured = false
+tag = "system_approved"
+order = "descending"
+n = 10
+offset = 0
+
+[world."avatar/trending"]
+max_unity_version = "2019.4.31f1"
+release_status = "public"
+sort = "heat"
+featured = false
+tag = "system_approved,avatar"
+order = "descending"
+n = 10
+offset = 0
+
+[world."spotlight/cross"]
+max_unity_version = "2019.4.31f1"
+release_status = "public"
+featured = false
+tag = "system_approved,admin_spotlight_xplat"
+order = "descending"
+n = 10
+offset = 0
+
+[world."spotlight/pc"]
+max_unity_version = "2019.4.31f1"
+release_status = "public"
+platform = "standalonewindows"
+featured = false
+tag = "system_approved,admin_spotlight_pc"
+order = "descending"
+n = 10
+offset = 0
+
+[world.new]
+max_unity_version = "2019.4.31f1"
+release_status = "public"
+sort = "publicationDate"
+featured = false
+tag = "system_approved"
+order = "descending"
+n = 10
+offset = 0
+
+[world.updated]
+max_unity_version = "2019.4.31f1"
+release_status = "public"
+sort = "updated"
+featured = false
+tag = "system_approved"
+order = "descending"
+n = 10
+offset = 0
