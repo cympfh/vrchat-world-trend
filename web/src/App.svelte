@@ -17,7 +17,7 @@
   let last_updated = false;
 
   function reload_last_update() {
-    fetch('/api/last_updated')
+    fetch('/worlds/api/last_updated')
       .then((res) => res.json())
       .then((res) => {
         last_updated = res.dt;
@@ -26,7 +26,7 @@
 
   function reload_teiban() {
     console.log('reload teiban');
-    fetch('/api/teiban?limit=20')
+    fetch('/worlds/api/teiban?limit=20')
       .then((res) => res.json())
       .then((res) => {
         worlds['teiban'] = res;
@@ -35,7 +35,7 @@
 
   function reload_trend() {
     console.log('reload trend');
-    fetch(`/api/trend?limit=20&hr=${hr_trend}`)
+    fetch(`/worlds/api/trend?limit=20&hr=${hr_trend}`)
       .then((res) => res.json())
       .then((res) => {
         worlds['trend'][hr_trend] = res;
@@ -44,7 +44,7 @@
 
   function reload_hottrend() {
     console.log('reload hottrend');
-    fetch(`/api/hottrend?limit=20&hr=${hr_hottrend}`)
+    fetch(`/worlds/api/hottrend?limit=20&hr=${hr_hottrend}`)
       .then((res) => res.json())
       .then((res) => {
         worlds['hottrend'][hr_hottrend] = res;
@@ -53,7 +53,7 @@
 
   function reload_new() {
     console.log('reload new');
-    fetch(`/api/new?limit=20&hr=${hr_new}`)
+    fetch(`/worlds/api/new?limit=20&hr=${hr_new}`)
       .then((res) => res.json())
       .then((res) => {
         worlds['new'][hr_new] = res;
