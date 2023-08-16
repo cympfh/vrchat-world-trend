@@ -9,11 +9,13 @@
     'teiban': [],
     'trend': [],
     'hottrend': [],
+    'featured': [],
     'new': [],
   };
   let hr_trend = 24 * 7;
   let hr_hottrend = 24;
-  let hr_new = 24 * 7;
+  let hr_featured = 24;
+  let hr_new = 24;
   let last_updated = false;
 
   function reload_last_update() {
@@ -51,6 +53,15 @@
       });
   }
 
+  function reload_featured() {
+    console.log('reload featured');
+    fetch(`/worlds/api/featured?limit=20&hr=${hr_featured}`)
+      .then((res) => res.json())
+      .then((res) => {
+        worlds['featured'][hr_featured] = res;
+      });
+  }
+
   function reload_new() {
     console.log('reload new');
     fetch(`/worlds/api/new?limit=20&hr=${hr_new}`)
@@ -64,6 +75,7 @@
     reload_teiban();
     reload_trend();
     reload_hottrend();
+    reload_featured();
     reload_new();
     reload_last_update();
   }
@@ -82,30 +94,7 @@
 
 <div class="section">
   <div class="container">
-    <p class="title">New</p>
-    <div class="select">
-      <select bind:value={hr_new} on:change={reload}>
-        <option value={8}>realtime</option>
-        <option value={24}>today</option>
-        <option value={24 * 7} selected>this week</option>
-        <option value={24 * 7 * 4}>this month</option>
-      </select>
-    </div>
-    <button class="button" on:click={reload}>
-      <Icon data={refresh} />
-    </button>
-  </div>
-</div>
-
-<div class="section">
-  <div class="container">
-    <Worlds worlds={worlds['new'][hr_new]} />
-  </div>
-</div>
-
-<div class="section">
-  <div class="container">
-    <p class="title">(New) Hot Trend</p>
+    <p class="title">HotTrend</p>
     <div class="select">
       <select bind:value={hr_hottrend} on:change={reload}>
         <option value={8}>realtime</option>
@@ -124,6 +113,53 @@
 <div class="section">
   <div class="container">
     <Worlds worlds={worlds.hottrend[hr_hottrend]} />
+  </div>
+</div>
+
+<div class="section">
+  <div class="container">
+    <p class="title">Featured</p>
+    <div class="select">
+      <select bind:value={hr_featured} on:change={reload}>
+        <option value={8}>realtime</option>
+        <option value={24} selected>today</option>
+        <option value={24 * 7}>this week</option>
+        <option value={24 * 7 * 4}>this month</option>
+        <option value={24 * 7 * 4 * 3}>3 month</option>
+      </select>
+    </div>
+    <button class="button" on:click={reload}>
+      <Icon data={refresh} />
+    </button>
+  </div>
+</div>
+
+<div class="section">
+  <div class="container">
+    <Worlds worlds={worlds['featured'][hr_featured]} />
+  </div>
+</div>
+
+<div class="section">
+  <div class="container">
+    <p class="title">New</p>
+    <div class="select">
+      <select bind:value={hr_new} on:change={reload}>
+        <option value={8}>realtime</option>
+        <option value={24} selected>today</option>
+        <option value={24 * 7}>this week</option>
+        <option value={24 * 7 * 4}>this month</option>
+      </select>
+    </div>
+    <button class="button" on:click={reload}>
+      <Icon data={refresh} />
+    </button>
+  </div>
+</div>
+
+<div class="section">
+  <div class="container">
+    <Worlds worlds={worlds['new'][hr_new]} />
   </div>
 </div>
 

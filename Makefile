@@ -1,6 +1,6 @@
 DOCKER_TAG := fastsvelte
 HOST := 0.0.0.0
-PORT := 8090
+PORT := 8093
 
 build:
 	cd web; make build

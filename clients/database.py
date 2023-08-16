@@ -258,6 +258,66 @@ class Database:
         return rows
 
     def get_hottrend(self, hr: int, limit: int):
+        """期間内で得たファボ数のランキング"""
+        dt = datetime.now() - timedelta(hours=hr)
+        query = """
+            WITH scores_max AS (
+                SELECT
+                    world_id,
+                    MAX(favorites) AS score_max
+                FROM
+                    world_popularity
+                WHERE
+                    inserted_at >= ?
+                GROUP BY
+                    world_id
+            ),
+            scores_min AS (
+                SELECT
+                    world_id,
+                    MAX(favorites) AS score_min
+                FROM
+                    world_popularity
+                WHERE
+                    inserted_at < ?
+                GROUP BY
+                    world_id
+            ),
+            scores AS (
+                SELECT
+                    scores_max.world_id,
+                    scores_max.score_max - scores_min.score_min AS score,
+                    scores_max.score_max,
+                    scores_min.score_min
+                FROM scores_max
+                INNER JOIN scores_min ON scores_max.world_id = scores_min.world_id
+            )
+            SELECT
+                world_id,
+                score,
+                score_max,
+                score_min,
+                name,
+                author_id,
+                author_name,
+                capacity,
+                image_url,
+                updated_at,
+                description
+            FROM scores
+            INNER JOIN worlds ON scores.world_id = worlds.id
+            LEFT OUTER JOIN world_description ON scores.world_id = world_description.id
+            ORDER BY score DESC
+            LIMIT ?
+        """
+        cur = self.con.cursor()
+        cur.execute(query, (dt, dt, limit))
+        rows = cur.fetchall()
+        cur.close()
+        self.con.commit()
+        return rows
+
+    def get_featured(self, hr: int, limit: int):
         """期間に訪れるようになった割合ランキング
 
         上り傾向の強いもの
@@ -274,8 +334,6 @@ class Database:
                     inserted_at >= ?
                 GROUP BY
                     world_id
-                ORDER BY score DESC
-                LIMIT ?
             ),
             scores_all AS (
                 SELECT
@@ -314,6 +372,7 @@ class Database:
             INNER JOIN worlds ON scores.world_id = worlds.id
             LEFT OUTER JOIN world_description ON scores.world_id = world_description.id
             ORDER BY score DESC
+            LIMIT ?
         """
         cur = self.con.cursor()
         cur.execute(query, (dt, limit))

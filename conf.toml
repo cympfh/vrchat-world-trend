@@ -5,6 +5,7 @@ interval_min = 60  # 前回調べてからこれ以上経過してないと調�
 names = [
   "trending",
   "avatar/trending",
+  "game/trending",
   "spotlight/cross",
   "spotlight/pc",
   "new",
@@ -26,7 +27,17 @@ max_unity_version = "2019.4.31f1"
 release_status = "public"
 sort = "heat"
 featured = false
-tag = "system_approved,avatar"
+tag = "avatar"
+order = "descending"
+n = 10
+offset = 0
+
+[world."game/trending"]
+max_unity_version = "2019.4.31f1"
+release_status = "public"
+sort = "heat"
+featured = false
+tag = "game"
 order = "descending"
 n = 10
 offset = 0

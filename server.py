@@ -39,6 +39,11 @@ def get_hottrend(hr: int, limit: int):
     return db.get_hottrend(hr, limit)
 
 
+@app.get("/worlds/api/featured")
+def get_featured(hr: int, limit: int):
+    return db.get_featured(hr, limit)
+
+
 @app.get("/worlds/api/new")
 def get_new(hr: int, limit: int):
     return db.get_new(hr, limit)
