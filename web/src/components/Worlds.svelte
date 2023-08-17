@@ -27,3 +27,11 @@
     </div>
   {/if}
 </div>
+
+<style global lang="scss">
+  div.columns {
+    display: flex;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+</style>

@@ -1,6 +1,7 @@
 <script>
   const changeLog = [
-    ["2023/08/16", "v1.1.0, featured=favorite increased, hot_trend=visitors increased"],
+    ["2023/08/17", "v1.1.1, :art: refactoring, TODO(new filter)"],
+    ["2023/08/16", "v1.1.0, :new: hottrend & featured"],
     ["2023/08/15", "v1.0.0, first release"],
   ];
 </script>
