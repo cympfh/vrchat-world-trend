@@ -178,11 +178,21 @@ class Database:
             return datetime.strptime(dt, "%Y-%m-%d %H:%M:%S.%f")
         return None
 
-    def get_teiban(self, limit: int):
+    def get_teiban(self, limit: int, new: bool):
         """今までに訪れた人数ランキング
 
         定番の人気ワールド
+
+        Parameters
+        ----------
+        limit
+            返す件数
+        new
+            最近更新されたワールドにフィルタするかどうか
+            一週間以内のことを最近と呼ぶ
         """
+        dt = datetime.now() - timedelta(days=7)
+        updated_dt = dt if new else datetime(2000, 1, 1)
         query = """
             WITH scores AS (
                 SELECT
@@ -193,7 +203,7 @@ class Database:
                 GROUP BY
                     world_id
                 ORDER BY score DESC
-                LIMIT ?
+                LIMIT 200
             )
             SELECT
                 world_id,
@@ -208,20 +218,24 @@ class Database:
             FROM scores
             INNER JOIN worlds ON scores.world_id = worlds.id
             LEFT OUTER JOIN world_description ON scores.world_id = world_description.id
+            WHERE
+                updated_at >= ?
+            LIMIT ?
         """
         cur = self.con.cursor()
-        cur.execute(query, (limit,))
+        cur.execute(query, (updated_dt, limit))
         rows = cur.fetchall()
         cur.close()
         self.con.commit()
         return rows
 
-    def get_trend(self, hr: int, limit: int):
+    def get_trend(self, hr: int, limit: int, new: bool):
         """期間に訪れた人数ランキング
 
         期間付きの定番人気ワールド
         """
         dt = datetime.now() - timedelta(hours=hr)
+        updated_dt = dt if new else datetime(2000, 1, 1)
         query = """
             WITH scores AS (
                 SELECT
@@ -234,7 +248,7 @@ class Database:
                 GROUP BY
                     world_id
                 ORDER BY score DESC
-                LIMIT ?
+                LIMIT 200
             )
             SELECT
                 world_id,
@@ -249,18 +263,34 @@ class Database:
             FROM scores
             INNER JOIN worlds ON scores.world_id = worlds.id
             LEFT OUTER JOIN world_description ON scores.world_id = world_description.id
+            WHERE
+                updated_at >= ?
+            LIMIT ?
         """
         cur = self.con.cursor()
-        cur.execute(query, (dt, limit))
+        cur.execute(query, (dt, updated_dt, limit))
         rows = cur.fetchall()
         cur.close()
         self.con.commit()
         return rows
 
-    def get_hottrend(self, hr: int, limit: int):
-        """期間内で得たファボ数のランキング"""
+    def get_hottrend(self, hr: int, limit: int, new: bool):
+        """期間内で得たファボ数のランキング
+
+        パラメータは他 API も共通
+
+        Parameters
+        ----------
+        hr
+            この期間 (hours) について集計する
+        limit
+            返す件数
+        new
+            hr の期間内にアップデートされたワールドにフィルタするかどうか
+        """
         dt = datetime.now() - timedelta(hours=hr)
-        query = """
+        updated_dt = dt if new else datetime(2000, 1, 1)
+        query = f"""
             WITH scores_max AS (
                 SELECT
                     world_id,
@@ -307,22 +337,25 @@ class Database:
             FROM scores
             INNER JOIN worlds ON scores.world_id = worlds.id
             LEFT OUTER JOIN world_description ON scores.world_id = world_description.id
+            WHERE
+                updated_at >= ?
             ORDER BY score DESC
             LIMIT ?
         """
         cur = self.con.cursor()
-        cur.execute(query, (dt, dt, limit))
+        cur.execute(query, (dt, dt, updated_dt, limit))
         rows = cur.fetchall()
         cur.close()
         self.con.commit()
         return rows
 
-    def get_featured(self, hr: int, limit: int):
+    def get_featured(self, hr: int, limit: int, new: bool):
         """期間に訪れるようになった割合ランキング
 
         上り傾向の強いもの
         """
         dt = datetime.now() - timedelta(hours=hr)
+        updated_dt = dt if new else datetime(2000, 1, 1)
         query = """
             WITH scores_recent AS (
                 SELECT
@@ -371,65 +404,13 @@ class Database:
             FROM scores
             INNER JOIN worlds ON scores.world_id = worlds.id
             LEFT OUTER JOIN world_description ON scores.world_id = world_description.id
+            WHERE
+                updated_at >= ?
             ORDER BY score DESC
             LIMIT ?
         """
         cur = self.con.cursor()
-        cur.execute(query, (dt, limit))
-        rows = cur.fetchall()
-        cur.close()
-        self.con.commit()
-        return rows
-
-    def get_new(self, hr: int, limit: int):
-        """新しく発見したワールドの中でのランキング"""
-        dt = datetime.now() - timedelta(hours=hr)
-        query = """
-            WITH scores_recent AS (
-                SELECT
-                    world_id,
-                    AVG(private_occupants + public_occupants) AS score
-                FROM
-                    world_popularity
-                WHERE
-                    inserted_at > ?
-                GROUP BY
-                    world_id
-                ORDER BY score DESC
-            ),
-            old_worlds AS (
-                SELECT DISTINCT world_id
-                FROM
-                    world_popularity
-                WHERE
-                    inserted_at < ?
-            ),
-            scores AS (
-                SELECT
-                    world_id,
-                    score
-                FROM scores_recent
-                WHERE
-                    world_id NOT IN ( SELECT world_id FROM old_worlds )
-            )
-            SELECT
-                world_id,
-                score,
-                name,
-                author_id,
-                author_name,
-                capacity,
-                image_url,
-                updated_at,
-                description
-            FROM scores
-            INNER JOIN worlds ON scores.world_id = worlds.id
-            LEFT OUTER JOIN world_description ON scores.world_id = world_description.id
-            ORDER BY score DESC
-            LIMIT ?
-        """
-        cur = self.con.cursor()
-        cur.execute(query, (dt, dt, limit))
+        cur.execute(query, (dt, updated_dt, limit))
         rows = cur.fetchall()
         cur.close()
         self.con.commit()

@@ -9,14 +9,20 @@
   export let choice_hr = true;
   let worlds = [];
   let hr = 24;
+  let new_filter = false;
 
   function reload() {
     console.log('reload featured');
-    fetch(`${api_endpoint}?limit=20&hr=${hr}`)
+    fetch(`${api_endpoint}?limit=20&hr=${hr}&new=${new_filter}`)
       .then((res) => res.json())
       .then((res) => {
         worlds = res;
       });
+  }
+
+  function toggle_new_filter() {
+    new_filter = !new_filter;
+    reload();
   }
 
   onMount(() => {
@@ -38,6 +44,7 @@
       </select>
     </div>
     {/if}
+    <button class="button" on:click={toggle_new_filter} class:is-dark={new_filter}>new</button>
     <button class="button" on:click={reload}>
       <Icon data={refresh} />
     </button>
