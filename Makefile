@@ -13,3 +13,8 @@ build-docker:
 
 serve-docker: build-docker
 	docker run --rm -p $(PORT):$(PORT) $(DOCKER_TAG):latest uvicorn server:app --host $(HOST) --port $(PORT)
+
+
+WORLD_ID :=
+inspect:
+	printf ".headers on\nSELECT * FROM world_popularity WHERE world_id = '$(WORLD_ID)'" | sqlite3 database.sqlite3

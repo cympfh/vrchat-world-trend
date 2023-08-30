@@ -1,5 +1,6 @@
 <script>
   const changeLog = [
+    ["2023/08/30", "v1.1.2, slightly updated"],
     ["2023/08/17", "v1.1.1, :art: refactoring, :new: new filter (recently updated), :fire: remove new kanban"],
     ["2023/08/16", "v1.1.0, :new: hottrend & featured"],
     ["2023/08/15", "v1.0.0, first release"],

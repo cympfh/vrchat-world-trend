@@ -148,6 +148,7 @@ class Database:
             world.visits,
             datetime.now(),
         )
+        print("insert_world_popularity", values)
         cur = self.con.cursor()
         sql = """
             INSERT OR REPLACE INTO world_popularity (
@@ -275,7 +276,7 @@ class Database:
         return rows
 
     def get_hottrend(self, hr: int, limit: int, new: bool):
-        """期間内で得たファボ数のランキング
+        """期間内で得たファボのランキング
 
         パラメータは他 API も共通
 
@@ -312,11 +313,13 @@ class Database:
                     inserted_at < ?
                 GROUP BY
                     world_id
+                HAVING
+                    MAX(favorites) > 0
             ),
             scores AS (
                 SELECT
                     scores_max.world_id,
-                    scores_max.score_max - scores_min.score_min AS score,
+                    (scores_max.score_max - scores_min.score_min) / pow(scores_min.score_min, 0.8) AS score,
                     scores_max.score_max,
                     scores_min.score_min
                 FROM scores_max
@@ -367,33 +370,36 @@ class Database:
                     inserted_at >= ?
                 GROUP BY
                     world_id
+                HAVING
+                    AVG(private_occupants + public_occupants) > 0
             ),
-            scores_all AS (
+            scores_old AS (
                 SELECT
                     world_id,
                     AVG(private_occupants + public_occupants) AS score
                 FROM
                     world_popularity
                 WHERE
-                    world_id IN (SELECT world_id FROM scores_recent)
+                    inserted_at < ?
                 GROUP BY
                     world_id
+                HAVING
+                    AVG(private_occupants + public_occupants) > 0
             ),
             scores AS (
                 SELECT
                     scores_recent.world_id,
                     scores_recent.score AS score_recent,
-                    scores_all.score AS score_all,
-                    (scores_recent.score / scores_all.score - 1) * 100 AS score
+                    scores_old.score AS score_old,
+                    (scores_recent.score / scores_old.score - 1.0) * 100 AS score
                 FROM scores_recent
-                INNER JOIN scores_all ON scores_recent.world_id = scores_all.world_id
-                WHERE (scores_recent.score / scores_all.score) > 1.0
+                INNER JOIN scores_old ON scores_recent.world_id = scores_old.world_id
             )
             SELECT
                 world_id,
                 score,
                 score_recent,
-                score_all,
+                score_old,
                 name,
                 author_id,
                 author_name,
@@ -410,7 +416,7 @@ class Database:
             LIMIT ?
         """
         cur = self.con.cursor()
-        cur.execute(query, (dt, updated_dt, limit))
+        cur.execute(query, (dt, dt, updated_dt, limit))
         rows = cur.fetchall()
         cur.close()
         self.con.commit()
