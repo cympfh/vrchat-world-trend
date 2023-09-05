@@ -15,7 +15,7 @@ class VRChat:
         try:
             current_user = auth_api.get_current_user()
         except Exception as err:
-            print(err)
+            print("[VRC/Error] auth:", err)
             auth_api.verify2_fa_email_code(
                 two_factor_email_code=TwoFactorEmailCode(
                     input("Email 2FA Code: ").strip()
@@ -32,7 +32,8 @@ class VRChat:
         try:
             world_api = worlds_api.WorldsApi(self.auth_api.api_client)
             return world_api.search_worlds(**params)  # type: ignore
-        except Exception:
+        except Exception as err:
+            print("[VRC/Error] /worlds:", err)
             return []
 
     def world(self, world_id: str) -> World | None:
@@ -40,5 +41,6 @@ class VRChat:
         try:
             world_api = worlds_api.WorldsApi(self.auth_api.api_client)
             return world_api.get_world(world_id)  # type: ignore
-        except Exception:
+        except Exception as err:
+            print("[VRC/Error] /world:", err)
             return None

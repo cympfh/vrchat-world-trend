@@ -32,21 +32,21 @@ def main():
 
     # Check popularity
     for world_id in worlds:
-        print("Checking", world_id)
+        # print("Checking", world_id)
         last = db.last_checked(world_id)
-        print("last checked at:", last)
+        # print("last checked at:", last)
         limit = datetime.now() - timedelta(
             minutes=config.get("batch", {}).get("interval_min", 60)
         )
         if last and last > limit:
-            print("skip")
+            # print("skip")
             continue
-        print("update")
+        print("update", world_id)
         w = vrc.world(world_id)
         if w is not None:
             db.update_world_description(w)
             db.insert_world_popularity(w)
-        time.sleep(1)
+        time.sleep(1.5)
 
 
 while True:
