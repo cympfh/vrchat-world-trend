@@ -421,3 +421,49 @@ class Database:
         cur.close()
         self.con.commit()
         return rows
+
+    def get_world_info(self, world_id: str):
+        """ワールドのメタ情報"""
+        cur = self.con.cursor()
+        cur.execute(
+            """
+            SELECT
+                worlds.id,
+                name,
+                author_id,
+                author_name,
+                capacity,
+                image_url,
+                updated_at,
+                description
+            FROM worlds
+            INNER JOIN world_description
+                ON worlds.id = world_description.id
+            WHERE
+                worlds.id = ?
+        """,
+            (world_id,),
+        )
+        w = cur.fetchone()
+        return w
+
+    def get_world_history(self, world_id: str, limit: int):
+        """ワールドの popularity の観測履歴"""
+        cur = self.con.cursor()
+        cur.execute(
+            """
+            SELECT
+                favorites,
+                private_occupants,
+                public_occupants,
+                visits,
+                inserted_at AS dt
+            FROM world_popularity
+            WHERE
+                world_id = ?
+            ORDER BY inserted_at DESC
+            LIMIT ?
+            """,
+            (world_id, limit),
+        )
+        return cur.fetchall()

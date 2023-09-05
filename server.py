@@ -44,4 +44,16 @@ def get_featured(hr: int, limit: int, new: bool = False):
     return db.get_featured(hr, limit, new)
 
 
+@app.get("/worlds/api/world")
+def get_world(world_id: str, limit: int = 100):
+    world_info = db.get_world_info(world_id)
+    if not world_info:
+        return None
+    world_history = db.get_world_history(world_id, limit)
+    return {
+        "meta": world_info,
+        "history": world_history,
+    }
+
+
 app.mount("/worlds/", MountFiles(directory="web/public", html=True), name="static")
