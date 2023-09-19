@@ -44,8 +44,11 @@ def main():
         print("update", world_id)
         w = vrc.world(world_id)
         if w is not None:
-            db.update_world_description(w)
-            db.insert_world_popularity(w)
+            try:
+                db.update_world_description(w)
+                db.insert_world_popularity(w)
+            except Exception as err:
+                print(err)
         time.sleep(1.5)
 
 

@@ -176,7 +176,10 @@ class Database:
         cur.close()
         self.con.commit()
         if dt:
-            return datetime.strptime(dt, "%Y-%m-%d %H:%M:%S.%f")
+            try:
+                return datetime.strptime(dt, "%Y-%m-%d %H:%M:%S.%f")
+            except:
+                return datetime.strptime(dt, "%Y-%m-%d %H:%M:%S")
         return None
 
     def get_teiban(self, limit: int, new: bool):
