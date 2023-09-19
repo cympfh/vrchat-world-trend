@@ -63,4 +63,7 @@
     white-space: wrap;
     overflow-y: auto;
   }
+  div.card-content {
+    white-space: pre-line;
+  }
 </style>
