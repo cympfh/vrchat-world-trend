@@ -14,6 +14,11 @@ build-docker:
 serve-docker: build-docker
 	docker run --rm -p $(PORT):$(PORT) $(DOCKER_TAG):latest uvicorn server:app --host $(HOST) --port $(PORT)
 
+batch:
+	python batch.py
+
+clean:
+	python clean.py
 
 WORLD_ID :=
 inspect:
