@@ -315,7 +315,7 @@ class Database:
         """信頼区間割合で来てる人数が多いもの
 
         与えられた期間で観測値 (来てる人数) の平均 mu, 標準偏差 sigma を求める
-        [mu-sigma, mu+sigma] の区間を [-1, 1] に写す (アフィン変換)
+        [mu-sigma, mu+sigma] の区間を [-100, 100] に写す (アフィン変換)
         最新の観測値を写した先で高い順を返す
         """
         dt = datetime.now() - timedelta(hours=hr)
@@ -370,10 +370,7 @@ scores_latest AS (
 
 SELECT
     scores_latest.world_id,
-    (scores_latest.score - scores_avg.score) / scores_var.score AS score,
-    scores_latest.score AS score_latest,
-    scores_avg.score AS score_avg,
-    scores_var.score AS score_var,
+    100 * (scores_latest.score - scores_avg.score) / scores_var.score AS score,
     worlds.name,
     worlds.author_id,
     worlds.author_name,

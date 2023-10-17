@@ -1,5 +1,6 @@
 <script>
   const changeLog = [
+    ["2023/10/17", "v1.1.4, New feature algorithm"],
     ["2023/10/17", "v1.1.3, ttl caching. Trend and Teiban are merged as Teiban"],
     ["2023/08/30", "v1.1.2, slightly updated"],
     ["2023/08/17", "v1.1.1, :art: refactoring, :new: new filter (recently updated), :fire: remove new kanban"],
