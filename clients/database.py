@@ -1,5 +1,7 @@
 import sqlite3
+from cachetools import cached, TTLCache
 from datetime import datetime, timedelta
+from util.timelib import hours, seconds, minutes
 
 from vrchatapi.models import LimitedWorld, World
 
@@ -72,6 +74,7 @@ class Database:
         cur.close()
         self.con.commit()
 
+    @cached(cache=TTLCache(maxsize=10, ttl=30))
     def worlds(self) -> list[str]:
         """持ってる world_id をすべて返す"""
         cur = self.con.cursor()
@@ -81,6 +84,7 @@ class Database:
         self.con.commit()
         return [row["id"] for row in rows]
 
+    @cached(cache=TTLCache(maxsize=10, ttl=seconds(20)))
     def last_updated(self) -> dict:
         cur = self.con.cursor()
         cur.execute(
@@ -182,58 +186,8 @@ class Database:
                 return datetime.strptime(dt, "%Y-%m-%d %H:%M:%S")
         return None
 
-    def get_teiban(self, limit: int, new: bool):
-        """今までに訪れた人数ランキング
-
-        定番の人気ワールド
-
-        Parameters
-        ----------
-        limit
-            返す件数
-        new
-            最近更新されたワールドにフィルタするかどうか
-            一週間以内のことを最近と呼ぶ
-        """
-        dt = datetime.now() - timedelta(days=7)
-        updated_dt = dt if new else datetime(2000, 1, 1)
-        query = """
-            WITH scores AS (
-                SELECT
-                    world_id,
-                    MAX(visits) / 1000.0 AS score
-                FROM
-                    world_popularity
-                GROUP BY
-                    world_id
-                ORDER BY score DESC
-                LIMIT 200
-            )
-            SELECT
-                world_id,
-                score,
-                name,
-                author_id,
-                author_name,
-                capacity,
-                image_url,
-                updated_at,
-                description
-            FROM scores
-            INNER JOIN worlds ON scores.world_id = worlds.id
-            LEFT OUTER JOIN world_description ON scores.world_id = world_description.id
-            WHERE
-                updated_at >= ?
-            LIMIT ?
-        """
-        cur = self.con.cursor()
-        cur.execute(query, (updated_dt, limit))
-        rows = cur.fetchall()
-        cur.close()
-        self.con.commit()
-        return rows
-
-    def get_trend(self, hr: int, limit: int, new: bool):
+    @cached(cache=TTLCache(maxsize=20, ttl=hours(6)))
+    def get_teiban(self, hr: int, limit: int, new: bool):
         """期間に訪れた人数ランキング
 
         期間付きの定番人気ワールド
@@ -278,6 +232,7 @@ class Database:
         self.con.commit()
         return rows
 
+    @cached(cache=TTLCache(maxsize=20, ttl=minutes(10)))
     def get_hottrend(self, hr: int, limit: int, new: bool):
         """期間内で得たファボのランキング
 
@@ -355,6 +310,7 @@ class Database:
         self.con.commit()
         return rows
 
+    @cached(cache=TTLCache(maxsize=20, ttl=minutes(10)))
     def get_featured(self, hr: int, limit: int, new: bool):
         """期間に訪れるようになった割合ランキング
 
@@ -425,6 +381,7 @@ class Database:
         self.con.commit()
         return rows
 
+    @cached(cache=TTLCache(maxsize=20, ttl=minutes(10)))
     def get_world_info(self, world_id: str):
         """ワールドのメタ情報"""
         cur = self.con.cursor()
@@ -450,6 +407,7 @@ class Database:
         w = cur.fetchone()
         return w
 
+    @cached(cache=TTLCache(maxsize=20, ttl=minutes(10)))
     def get_world_history(self, world_id: str, limit: int):
         """ワールドの popularity の観測履歴"""
         cur = self.con.cursor()

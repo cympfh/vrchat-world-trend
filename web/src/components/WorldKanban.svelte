@@ -6,9 +6,10 @@
 
   export let api_endpoint;
   export let title;
-  export let choice_hr = true;
+  export let default_hr = 24;
+
   let worlds = [];
-  let hr = 24;
+  let hr = default_hr;
   let new_filter = false;
 
   function reload() {
@@ -33,17 +34,14 @@
 <div class="section">
   <div class="container">
     <p class="title">{title}</p>
-    {#if choice_hr}
     <div class="select">
       <select bind:value={hr} on:change={reload}>
         <option value={8}>realtime</option>
         <option value={24} selected>today</option>
         <option value={24 * 7}>this week</option>
         <option value={24 * 7 * 4}>this month</option>
-        <option value={24 * 7 * 4 * 3}>3 month</option>
       </select>
     </div>
-    {/if}
     <button class="button" on:click={toggle_new_filter} class:is-dark={new_filter}>new</button>
     <button class="button" on:click={reload}>
       <Icon data={refresh} />
