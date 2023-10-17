@@ -312,70 +312,87 @@ class Database:
 
     @cached(cache=TTLCache(maxsize=20, ttl=minutes(10)))
     def get_featured(self, hr: int, limit: int, new: bool):
-        """期間に訪れるようになった割合ランキング
+        """信頼区間割合で来てる人数が多いもの
 
-        上り傾向の強いもの
+        与えられた期間で観測値 (来てる人数) の平均 mu, 標準偏差 sigma を求める
+        [mu-sigma, mu+sigma] の区間を [-1, 1] に写す (アフィン変換)
+        最新の観測値を写した先で高い順を返す
         """
         dt = datetime.now() - timedelta(hours=hr)
         updated_dt = dt if new else datetime(2000, 1, 1)
         query = """
-            WITH scores_recent AS (
-                SELECT
-                    world_id,
-                    AVG(private_occupants + public_occupants) AS score
-                FROM
-                    world_popularity
-                WHERE
-                    inserted_at >= ?
-                GROUP BY
-                    world_id
-                HAVING
-                    AVG(private_occupants + public_occupants) > 0
-            ),
-            scores_old AS (
-                SELECT
-                    world_id,
-                    AVG(private_occupants + public_occupants) AS score
-                FROM
-                    world_popularity
-                WHERE
-                    inserted_at < ?
-                GROUP BY
-                    world_id
-                HAVING
-                    AVG(private_occupants + public_occupants) > 0
-            ),
-            scores AS (
-                SELECT
-                    scores_recent.world_id,
-                    scores_recent.score AS score_recent,
-                    scores_old.score AS score_old,
-                    (scores_recent.score / scores_old.score - 1.0) * 100 AS score
-                FROM scores_recent
-                INNER JOIN scores_old ON scores_recent.world_id = scores_old.world_id
-            )
-            SELECT
-                world_id,
-                score,
-                score_recent,
-                score_old,
-                name,
-                author_id,
-                author_name,
-                capacity,
-                image_url,
-                updated_at,
-                description
-            FROM scores
-            INNER JOIN worlds ON scores.world_id = worlds.id
-            LEFT OUTER JOIN world_description ON scores.world_id = world_description.id
-            WHERE
-                updated_at >= ?
-            ORDER BY score DESC
-            LIMIT ?
+WITH scores_avg AS (
+    SELECT
+        world_id,
+        AVG(private_occupants + public_occupants) AS score
+    FROM
+        world_popularity
+    WHERE
+        inserted_at >= ?
+    GROUP BY
+        world_id
+    HAVING score > 0.9
+),
+
+scores_var AS (
+    SELECT
+        world_id,
+        POW(AVG(POW(private_occupants + public_occupants, 2)), 0.5) AS score
+    FROM
+        world_popularity
+    WHERE
+        inserted_at >= ?
+    GROUP BY
+        world_id
+    HAVING score > 1
+),
+
+scores_latest AS (
+    SELECT
+        world_id,
+        score,
+        inserted_at
+    FROM (
+        SELECT 
+            world_id,
+            private_occupants + public_occupants AS score,
+            inserted_at,
+            ROW_NUMBER() OVER (PARTITION BY world_id ORDER BY inserted_at DESC) AS rn
+        FROM
+            world_popularity
+        WHERE
+            inserted_at >= ?
+    )
+    WHERE
+        rn = 1
+        AND score >= 6
+)
+
+SELECT
+    scores_latest.world_id,
+    (scores_latest.score - scores_avg.score) / scores_var.score AS score,
+    scores_latest.score AS score_latest,
+    scores_avg.score AS score_avg,
+    scores_var.score AS score_var,
+    worlds.name,
+    worlds.author_id,
+    worlds.author_name,
+    worlds.capacity,
+    worlds.image_url,
+    worlds.updated_at,
+    world_description.description
+FROM scores_latest
+INNER JOIN scores_avg ON scores_latest.world_id = scores_avg.world_id
+INNER JOIN scores_var ON scores_latest.world_id = scores_var.world_id
+INNER JOIN worlds ON scores_latest.world_id = worlds.id
+LEFT OUTER JOIN world_description ON scores_latest.world_id = world_description.id
+WHERE
+    updated_at >= ?
+ORDER BY score DESC
+LIMIT ?
         """
         cur = self.con.cursor()
-        cur.execute(query, (dt, dt, updated_dt, limit))
+        cur.execute(query, (dt, dt, dt, updated_dt, limit))
         rows = cur.fetchall()
         cur.close()
         self.con.commit()
@@ -428,3 +445,51 @@ class Database:
             (world_id, limit),
         )
         return cur.fetchall()
+
+    def get_kaso_worlds(self, limit: int, days: int):
+        """過疎なワールドを列挙する
+
+        Parameters
+        ----------
+        limit
+            最大で来てる人数がコレ以下
+        days
+            調べる期間
+        """
+        dt = datetime.now() - timedelta(days=days)
+        cur = self.con.cursor()
+        cur.execute(
+            """
+            SELECT
+                world_id,
+                worlds.name,
+                MAX(private_occupants + public_occupants) AS score
+            FROM world_popularity
+            INNER JOIN worlds ON world_popularity.world_id = worlds.id
+            WHERE
+                inserted_at >= ?
+            GROUP BY world_id
+            HAVING
+                score <= ?
+            """,
+            (dt, limit),
+        )
+        return cur.fetchall()
+
+    def del_record(self, world_id: str):
+        """関わるレコードをすべて消す"""
+        cur = self.con.cursor()
+        cur.execute(
+            "DELETE FROM worlds WHERE id = ?",
+            (world_id,),
+        )
+        cur.execute(
+            "DELETE FROM world_description WHERE id = ?",
+            (world_id,),
+        )
+        cur.execute(
+            "DELETE FROM world_popularity WHERE world_id = ?",
+            (world_id,),
+        )
+        cur.close()
+        self.con.commit()
