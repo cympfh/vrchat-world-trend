@@ -1,5 +1,6 @@
 <script>
   const changeLog = [
+    ["2023/10/26", "v1.1.5, Fix loading logic"],
     ["2023/10/17", "v1.1.4, New feature algorithm"],
     ["2023/10/17", "v1.1.3, ttl caching. Trend and Teiban are merged as Teiban"],
     ["2023/08/30", "v1.1.2, slightly updated"],

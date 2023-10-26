@@ -8,11 +8,12 @@
   export let title;
   export let default_hr = 24;
 
-  let worlds = [];
+  let worlds = null;
   let hr = default_hr;
   let new_filter = false;
 
   function reload() {
+    worlds = null;
     console.log('reload featured');
     fetch(`${api_endpoint}?limit=20&hr=${hr}&new=${new_filter}`)
       .then((res) => res.json())

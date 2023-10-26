@@ -1,5 +1,6 @@
 <script>
   import Empty from "./Empty.svelte";
+  import NowLoading from "./NowLoading.svelte";
   import World from "./World.svelte";
   export let worlds;
 </script>
@@ -21,6 +22,10 @@
       />
     </div>
   {/each}
+  {:else if worlds == null}
+    <div class="column is-full">
+      <NowLoading />
+    </div>
   {:else}
     <div class="column is-full">
       <Empty />
