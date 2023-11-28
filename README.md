@@ -1,8 +1,17 @@
-# VRChat world Trend
+# worlds/ VRChat world Trend
 
-## Where can i see?
+## Where can I see?
 
-- (WIP)
+- http://s.cympfh.cc/worlds/
+
+## Can I run and hosting this?
+
+Yes. You need to run
+
+- batch
+    - `make batch`
+- and web
+    - `make serve`
 
 ## Refs:
 
