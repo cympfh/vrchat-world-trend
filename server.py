@@ -25,18 +25,18 @@ async def get_last_updated():
 
 
 @app.get("/worlds/api/teiban")
-async def get_teiban(hr: int, limit: int, new: bool = False):
-    return db.get_teiban(hr, limit, new)
+async def get_teiban(hr: int, limit: int):
+    return db.get_teiban(hr, limit)
 
 
 @app.get("/worlds/api/hottrend")
-async def get_hottrend(hr: int, limit: int, new: bool = False):
-    return db.get_hottrend(hr, limit, new)
+async def get_hottrend(hr: int, limit: int):
+    return db.get_hottrend(hr, limit)
 
 
 @app.get("/worlds/api/featured")
-async def get_featured(hr: int, limit: int, new: bool = False):
-    return db.get_featured(hr, limit, new)
+async def get_featured(hr: int, limit: int):
+    return db.get_featured(hr, limit)
 
 
 @app.get("/worlds/api/world")

@@ -187,13 +187,12 @@ class Database:
         return None
 
     @cached(cache=TTLCache(maxsize=20, ttl=hours(6)))
-    def get_teiban(self, hr: int, limit: int, new: bool):
+    def get_teiban(self, hr: int, limit: int):
         """期間に訪れた人数ランキング
 
         期間付きの定番人気ワールド
         """
         dt = datetime.now() - timedelta(hours=hr)
-        updated_dt = dt if new else datetime(2000, 1, 1)
         query = """
             WITH scores AS (
                 SELECT
@@ -221,19 +220,17 @@ class Database:
             FROM scores
             INNER JOIN worlds ON scores.world_id = worlds.id
             LEFT OUTER JOIN world_description ON scores.world_id = world_description.id
-            WHERE
-                updated_at >= ?
             LIMIT ?
         """
         cur = self.con.cursor()
-        cur.execute(query, (dt, updated_dt, limit))
+        cur.execute(query, (dt, limit))
         rows = cur.fetchall()
         cur.close()
         self.con.commit()
         return rows
 
     @cached(cache=TTLCache(maxsize=20, ttl=minutes(10)))
-    def get_hottrend(self, hr: int, limit: int, new: bool):
+    def get_hottrend(self, hr: int, limit: int):
         """期間内で得たファボのランキング
 
         パラメータは他 API も共通
@@ -244,11 +241,8 @@ class Database:
             この期間 (hours) について集計する
         limit
             返す件数
-        new
-            hr の期間内にアップデートされたワールドにフィルタするかどうか
         """
         dt = datetime.now() - timedelta(hours=hr)
-        updated_dt = dt if new else datetime(2000, 1, 1)
         query = f"""
             WITH scores_max AS (
                 SELECT
@@ -298,20 +292,18 @@ class Database:
             FROM scores
             INNER JOIN worlds ON scores.world_id = worlds.id
             LEFT OUTER JOIN world_description ON scores.world_id = world_description.id
-            WHERE
-                updated_at >= ?
             ORDER BY score DESC
             LIMIT ?
         """
         cur = self.con.cursor()
-        cur.execute(query, (dt, dt, updated_dt, limit))
+        cur.execute(query, (dt, dt, limit))
         rows = cur.fetchall()
         cur.close()
         self.con.commit()
         return rows
 
     @cached(cache=TTLCache(maxsize=20, ttl=minutes(10)))
-    def get_featured(self, hr: int, limit: int, new: bool):
+    def get_featured(self, hr: int, limit: int):
         """信頼区間割合で来てる人数が多いもの
 
         与えられた期間で観測値 (来てる人数) の平均 mu, 標準偏差 sigma を求める
@@ -319,7 +311,6 @@ class Database:
         最新の観測値を写した先で高い順を返す
         """
         dt = datetime.now() - timedelta(hours=hr)
-        updated_dt = dt if new else datetime(2000, 1, 1)
         query = """
 WITH scores_avg AS (
     SELECT
@@ -329,22 +320,25 @@ WITH scores_avg AS (
         world_popularity
     WHERE
         inserted_at >= ?
+        AND (private_occupants + public_occupants) > 0
     GROUP BY
         world_id
-    HAVING score > 0.9
+    HAVING score > 1
 ),
 
 scores_var AS (
     SELECT
-        world_id,
-        POW(AVG(POW(private_occupants + public_occupants, 2)), 0.5) AS score
+        world_popularity.world_id,
+        POW(AVG(POW(private_occupants + public_occupants - scores_avg.score, 2)), 0.5) AS score
     FROM
         world_popularity
+    INNER JOIN scores_avg ON world_popularity.world_id = scores_avg.world_id
     WHERE
         inserted_at >= ?
+        AND (private_occupants + public_occupants) > 0
     GROUP BY
-        world_id
-    HAVING score > 1
+        world_popularity.world_id
+    HAVING score > 0
 ),
 
 scores_latest AS (
@@ -362,6 +356,7 @@ scores_latest AS (
             world_popularity
         WHERE
             inserted_at >= ?
+            AND (private_occupants + public_occupants) > 0
     )
     WHERE
         rn = 1
@@ -371,6 +366,9 @@ scores_latest AS (
 SELECT
     scores_latest.world_id,
     100 * (scores_latest.score - scores_avg.score) / scores_var.score AS score,
+    scores_latest.score AS score_latest,
+    scores_avg.score AS score_avg,
+    scores_var.score AS score_var,
     worlds.name,
     worlds.author_id,
     worlds.author_name,
@@ -383,13 +381,11 @@ INNER JOIN scores_avg ON scores_latest.world_id = scores_avg.world_id
 INNER JOIN scores_var ON scores_latest.world_id = scores_var.world_id
 INNER JOIN worlds ON scores_latest.world_id = worlds.id
 LEFT OUTER JOIN world_description ON scores_latest.world_id = world_description.id
-WHERE
-    updated_at >= ?
 ORDER BY score DESC
 LIMIT ?
         """
         cur = self.con.cursor()
-        cur.execute(query, (dt, dt, dt, updated_dt, limit))
+        cur.execute(query, (dt, dt, dt, limit))
         rows = cur.fetchall()
         cur.close()
         self.con.commit()
@@ -436,6 +432,7 @@ LIMIT ?
             FROM world_popularity
             WHERE
                 world_id = ?
+                AND ( private_occupants + public_occupants ) > 0
             ORDER BY inserted_at DESC
             LIMIT ?
             """,

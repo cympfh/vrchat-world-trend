@@ -4,6 +4,14 @@ from vrchatapi.api.authentication_api import AuthenticationApi
 from vrchatapi.models import LimitedWorld, TwoFactorEmailCode, World
 
 
+class VRCError(Exception):
+    pass
+
+
+class WorldNotFoundError(VRCError):
+    pass
+
+
 class VRChat:
     def __init__(self, username: str, password: str):
         conf = vrchatapi.Configuration(
@@ -43,4 +51,7 @@ class VRChat:
             return world_api.get_world(world_id)  # type: ignore
         except Exception as err:
             print("[VRC/Error] /world:", err)
+            if "Not Found" in str(err):
+                print(f"!! TODO: Delete {world_id}")
+                raise WorldNotFoundError
             return None

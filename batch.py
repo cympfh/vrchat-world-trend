@@ -4,7 +4,7 @@ import tomllib
 from datetime import datetime, timedelta
 from typing import cast
 
-from clients import Database, VRChat
+from clients import Database, VRChat, WorldNotFoundError
 
 db = Database()
 vrc = VRChat(
@@ -42,16 +42,20 @@ def main():
             # print("skip")
             continue
         print("update", world_id)
-        w = vrc.world(world_id)
-        if w is not None:
-            try:
-                db.update_world_description(w)
-                db.insert_world_popularity(w)
-            except Exception as err:
-                print(err)
+        try:
+            w = vrc.world(world_id)
+            if w is not None:
+                try:
+                    db.update_world_description(w)
+                    db.insert_world_popularity(w)
+                except Exception as err:
+                    print(err)
+        except WorldNotFoundError:
+            print("Delete", world_id)
+            db.del_record(world_id)
         time.sleep(1.5)
 
 
 while True:
     main()
-    time.sleep(600)
+    time.sleep(120)

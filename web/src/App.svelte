@@ -18,8 +18,8 @@
 </section>
 
 {#if is_top}
-<WorldKanban title="HotTrend" api_endpoint="/worlds/api/hottrend" />
-<WorldKanban title="Featured" api_endpoint="/worlds/api/featured" />
+<WorldKanban title="HotTrend" api_endpoint="/worlds/api/hottrend" default_hr={24 * 7}  />
+<WorldKanban title="Featured" api_endpoint="/worlds/api/featured" default_hr={24 * 7 * 4} />
 <WorldKanban title="Teiban" api_endpoint="/worlds/api/teiban" default_hr={24 * 7} />
 {:else}
 <WorldGraph {world_id} />
