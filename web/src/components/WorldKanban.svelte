@@ -7,6 +7,7 @@
   export let api_endpoint;
   export let title;
   export let default_hr = 24;
+  let limit = 36;
 
   let worlds = null;
   let hr = default_hr;
@@ -14,7 +15,7 @@
   function reload() {
     worlds = null;
     console.log('reload featured');
-    fetch(`${api_endpoint}?limit=20&hr=${hr}`)
+    fetch(`${api_endpoint}?limit=${limit}&hr=${hr}`)
       .then((res) => res.json())
       .then((res) => {
         worlds = res;
