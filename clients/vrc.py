@@ -1,19 +1,29 @@
+import os
+from typing import Any
+
+import requests
 import vrchatapi
 from vrchatapi.api import worlds_api
 from vrchatapi.api.authentication_api import AuthenticationApi
-from vrchatapi.models import LimitedWorld, TwoFactorEmailCode, World
+from vrchatapi.models import LimitedWorld, TwoFactorEmailCode
 
 
 class VRCError(Exception):
     pass
 
 
-class WorldNotFoundError(VRCError):
-    pass
-
-
 class VRChat:
-    def __init__(self, username: str, password: str):
+    USER_AGENT = "cympfh; cympfh@mail.cc"
+
+    def __init__(self):
+        username = os.getenv("VRCHAT_USER")
+        password = os.getenv("VRCHAT_PASSWORD")
+        auth_key = os.getenv("VRCHAT_AUTH_KEY")
+        assert (
+            username and password and auth_key
+        ), "Set ENV VRCHAT_USER && VRCHAT_PASSWORD && VRCHAT_AUTH_KEY"
+
+        self.auth_key = auth_key
         conf = vrchatapi.Configuration(
             username=username,
             password=password,
@@ -44,14 +54,27 @@ class VRChat:
             print("[VRC/Error] /worlds:", err)
             return []
 
-    def world(self, world_id: str) -> World | None:
-        """GET /api/1/world/{world_id}"""
+    def get(self, endpoint: str, params: dict[str, Any] | None = None):
+        headers = {
+            "User-Agent": self.USER_AGENT,
+            "Content-Type": "application/json",
+        }
+        cookies = {"auth": self.auth_key}
+        endpoint = endpoint.removeprefix("/")
+        response = requests.get(
+            f"https://api.vrchat.cloud/{endpoint}",
+            headers=headers,
+            cookies=cookies,
+            params=params,
+        )
+        return response.json()
+
+    def world(self, world_id: str):
+        """GET a World by ID"""
         try:
-            world_api = worlds_api.WorldsApi(self.auth_api.api_client)
-            return world_api.get_world(world_id)  # type: ignore
+            result = self.get(f"/api/1/worlds/{world_id}")
+            if "error" in result:
+                raise VRCError(result["error"])
+            return result
         except Exception as err:
-            print("[VRC/Error] /world:", err)
-            if "Not Found" in str(err):
-                print(f"!! TODO: Delete {world_id}")
-                raise WorldNotFoundError
-            return None
+            raise VRCError(err)

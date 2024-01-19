@@ -1,9 +1,10 @@
 import sqlite3
-from cachetools import cached, TTLCache
 from datetime import datetime, timedelta
-from util.timelib import hours, seconds, minutes
 
-from vrchatapi.models import LimitedWorld, World
+from cachetools import TTLCache, cached
+from vrchatapi.models import LimitedWorld
+
+from util.timelib import hours, minutes, seconds
 
 
 class Database:
@@ -127,10 +128,10 @@ class Database:
         cur.close()
         self.con.commit()
 
-    def update_world_description(self, world: World):
+    def update_world_description(self, world: dict):
         values = (
-            world.id,
-            world.description,
+            world["id"],
+            world["description"],
         )
         cur = self.con.cursor()
         sql = """
@@ -143,13 +144,13 @@ class Database:
         cur.close()
         self.con.commit()
 
-    def insert_world_popularity(self, world: World):
+    def insert_world_popularity(self, world: dict):
         values = (
-            world.id,
-            world.favorites,
-            world.private_occupants,
-            world.public_occupants,
-            world.visits,
+            world["id"],
+            world["favorites"],
+            world["privateOccupants"],
+            world["publicOccupants"],
+            world["visits"],
             datetime.now(),
         )
         print("insert_world_popularity", values)
