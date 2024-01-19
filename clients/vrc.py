@@ -1,57 +1,53 @@
-import vrchatapi
-from vrchatapi.api import worlds_api
-from vrchatapi.api.authentication_api import AuthenticationApi
-from vrchatapi.models import LimitedWorld, TwoFactorEmailCode, World
+import requests
+from typing import Any
+import os
 
 
 class VRCError(Exception):
     pass
 
 
-class WorldNotFoundError(VRCError):
-    pass
-
-
 class VRChat:
-    def __init__(self, username: str, password: str):
-        conf = vrchatapi.Configuration(
-            username=username,
-            password=password,
+    """さくらサーバからだと認証が通らないっぽい"""
+
+    USER_AGENT = "cympfh;mail@cympfh.cc"
+
+    def __init__(self):
+        auth_key = os.environ.get("VRCHAT_AUTH_KEY")
+        assert auth_key, "Set ENV VRCHAT_AUTH_KEY"
+        self.auth_key = auth_key
+
+    def get(self, endpoint: str, params: dict[str, Any] | None = None):
+        headers = {
+            "User-Agent": self.USER_AGENT,
+            "Content-Type": "application/json",
+        }
+        cookies = {"auth": self.auth_key}
+        endpoint = endpoint.removeprefix("/")
+        response = requests.get(
+            f"https://api.vrchat.cloud/{endpoint}",
+            headers=headers,
+            cookies=cookies,
+            params=params,
         )
-        client = vrchatapi.ApiClient(conf)
-        auth_api = AuthenticationApi(client)
-        try:
-            current_user = auth_api.get_current_user()
-        except Exception as err:
-            print("[VRC/Error] auth:", err)
-            auth_api.verify2_fa_email_code(
-                two_factor_email_code=TwoFactorEmailCode(
-                    input("Email 2FA Code: ").strip()
-                )
-            )
-            current_user = auth_api.get_current_user()
+        return response.json()
 
-        print(current_user)
-        self.client = client
-        self.auth_api = auth_api
-
-    def worlds(self, params: dict) -> list[LimitedWorld]:
+    def worlds(self, params: dict):
         """GET /api/1/worlds"""
         try:
-            world_api = worlds_api.WorldsApi(self.auth_api.api_client)
-            return world_api.search_worlds(**params)  # type: ignore
+            result = self.get("/api/1/worlds/active", params)
+            if "error" in result:
+                raise VRCError(result["error"])
+            return result
         except Exception as err:
-            print("[VRC/Error] /worlds:", err)
-            return []
+            raise VRCError(err)
 
-    def world(self, world_id: str) -> World | None:
-        """GET /api/1/world/{world_id}"""
+    def world(self, world_id: str):
+        """GET a World by ID"""
         try:
-            world_api = worlds_api.WorldsApi(self.auth_api.api_client)
-            return world_api.get_world(world_id)  # type: ignore
+            result = self.get(f"/api/1/worlds/{world_id}")
+            if "error" in result:
+                raise VRCError(result["error"])
+            return result
         except Exception as err:
-            print("[VRC/Error] /world:", err)
-            if "Not Found" in str(err):
-                print(f"!! TODO: Delete {world_id}")
-                raise WorldNotFoundError
-            return None
+            raise VRCError(err)
